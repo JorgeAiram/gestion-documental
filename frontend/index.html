@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuControl - Plataforma de Gestión Documental</title>
+    <!-- Tailwind CSS (via local-friendly CDN fallback or clean CSS) and FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-folder-tree text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        DocuControl
+                        <span class="text-xs font-medium px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">v1.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Gestión Documental con Control de Versiones</p>
+                </div>
+            </div>
+
+            <!-- Global Search Bar -->
+            <div id="nav-search-container" class="hidden md:flex flex-1 max-w-md mx-6">
+                <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </span>
+                    <input type="text" id="global-search-input" placeholder="Buscar documentos, carpetas o contenido..." 
+                           class="w-full pl-9 pr-24 py-1.5 bg-slate-800 text-sm text-slate-200 placeholder-slate-400 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button id="btn-open-advanced-search" title="Filtros avanzados" class="absolute right-1 top-1 bottom-1 px-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded flex items-center gap-1">
+                        <i class="fa-solid fa-sliders"></i> Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Menu & Actions -->
+            <div class="flex items-center space-x-3">
+                <!-- Notifications Bell -->
+                <div class="relative" id="notifications-wrapper">
+                    <button id="btn-notifications" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 relative transition-colors" title="Notificaciones">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span id="notif-badge" class="hidden absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-slate-200 text-slate-800 z-50 overflow-hidden">
+                        <div class="p-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                            <span class="font-semibold text-sm">Notificaciones</span>
+                            <button id="btn-mark-all-read" class="text-xs text-blue-600 hover:underline">Marcar todas leídas</button>
+                        </div>
+                        <div id="notif-list" class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                            <p class="p-4 text-xs text-slate-400 text-center">No hay notificaciones pendientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Profile Pill -->
+                <div id="user-profile-section" class="flex items-center pl-2 border-l border-slate-700">
+                    <div class="text-right mr-3 hidden sm:block">
+                        <div id="user-display-name" class="text-sm font-semibold text-white">Invitado</div>
+                        <div id="user-display-role" class="text-xs text-blue-400 font-medium">Lector</div>
+                    </div>
+                    <button id="btn-user-menu" class="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-white font-bold transition">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Logout / Login toggle button -->
+                <button id="btn-auth-action" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600/90 hover:bg-red-600 text-white transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span id="btn-auth-text">Salir</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
+
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 shrink-0 flex flex-col gap-4">
+            <!-- Fast Action: Upload Document button -->
+            <button id="btn-main-upload" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Subir archivo nuevo</span>
+            </button>
+
+            <!-- Navigation Links -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 space-y-1">
+                <button id="nav-btn-all" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 transition">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-folder text-blue-600"></i>
+                        <span>Todos los archivos</span>
+                    </div>
+                    <span id="total-files-count" class="text-xs px-2 py-0.5 rounded-full bg-blue-200/60 text-blue-800">0</span>
+                </button>
+
+                <button id="nav-btn-recent" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
+                        <span>Modificados recientemente</span>
+                    </div>
+                </button>
+
+                <button id="nav-btn-locked" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-lock text-amber-500"></i>
+                        <span>Archivos en edición (bloqueados)</span>
+                    </div>
+                    <span id="locked-files-count" class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">0</span>
+                </button>
+
+                <button id="nav-btn-trash" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-trash-can text-slate-500"></i>
+                        <span>Papelera de reciclaje</span>
+                    </div>
+                    <span id="trash-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">0</span>
+                </button>
+
+                <!-- Admin Only Panel Link -->
+                <button id="nav-btn-admin" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition hidden">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-shield-halved text-purple-600"></i>
+                        <span>Panel de Administración</span>
+                    </div>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-purple-200 text-purple-900 rounded font-bold">ADMIN</span>
+                </button>
+            </div>
+
+            <!-- Folder Tree Widget -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Carpetas de la Empresa</h3>
+                    <button id="btn-create-folder" title="Nueva Carpeta" class="text-blue-600 hover:text-blue-800 text-sm p-1 rounded hover:bg-blue-50 transition">
+                        <i class="fa-solid fa-folder-plus"></i>
+                    </button>
+                </div>
+                <div id="folders-tree-list" class="space-y-1 text-sm max-h-72 overflow-y-auto">
+                    <!-- Loaded dynamically -->
+                    <div class="text-center py-4 text-xs text-slate-400">Cargando carpetas...</div>
+                </div>
+            </div>
+
+            <!-- Fast Role Switcher (For demo and user testing) -->
+            <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-xs">
+                <div class="font-semibold text-blue-900 mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-users-gear text-blue-600"></i>
+                    <span>Cambiar de perfil (Demostración)</span>
+                </div>
+                <p class="text-slate-600 mb-2 text-[11px]">Prueba las funciones de cada rol con un solo clic:</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="window.DocuApp.quickLogin('admin')" class="px-2 py-1 bg-white hover:bg-blue-100 border border-blue-200 rounded text-slate-800 font-medium text-left truncate">
+                        👑 Admin
+                    </button>
+                    <button onclick="window.DocuApp.quickLogin('carlos.editor')" class="px-2 py-1 bg-white hover:bg-blue-100 border border-blue-200 rounded text-slate-800 font-medium text-left truncate">
+                        ✏️ Editor
+                    </button>
+                    <button onclick="window.DocuApp.quickLogin('elena.revisora')" class="px-2 py-1 bg-white hover:bg-blue-100 border border-blue-200 rounded text-slate-800 font-medium text-left truncate">
+                        🔍 Revisor
+                    </button>
+                    <button onclick="window.DocuApp.quickLogin('mario.lector')" class="px-2 py-1 bg-white hover:bg-blue-100 border border-blue-200 rounded text-slate-800 font-medium text-left truncate">
+                        📖 Lector
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Header Toolbar -->
+            <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                <!-- Breadcrumbs -->
+                <div class="flex items-center space-x-2 text-sm text-slate-600 flex-wrap" id="breadcrumb-container">
+                    <button onclick="window.DocuApp.navigateToFolder(null)" class="hover:text-blue-600 font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-house text-xs"></i>
+                        <span>Inicio</span>
+                    </button>
+                    <span class="text-slate-400">/</span>
+                    <span id="current-folder-title" class="font-bold text-slate-900">Todos los documentos</span>
+                </div>
+
+                <!-- View Options & Actions -->
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <!-- Order dropdown -->
+                    <select id="sort-select" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="name_asc">Nombre (A-Z)</option>
+                        <option value="updated_desc" selected>Fecha de cambio (Reciente primero)</option>
+                        <option value="size_desc">Tamaño (Mayor a menor)</option>
+                    </select>
+
+                    <!-- List / Grid View Switcher -->
+                    <div class="flex border border-slate-300 rounded-lg overflow-hidden bg-white">
+                        <button id="btn-view-list" class="px-2.5 py-1.5 text-xs bg-blue-50 text-blue-600 font-bold" title="Vista de lista">
+                            <i class="fa-solid fa-list"></i>
+                        </button>
+                        <button id="btn-view-grid" class="px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100" title="Vista de cuadrícula">
+                            <i class="fa-solid fa-grip"></i>
+                        </button>
+                    </div>
+
+                    <button id="btn-refresh" class="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="Actualizar">
+                        <i class="fa-solid fa-rotate-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Drag and Drop Zone Container -->
+            <div id="drop-zone" class="relative flex-1 p-4 flex flex-col transition-colors">
+                <!-- Drop Overlay (when dragging file over) -->
+                <div id="drag-overlay" class="hidden absolute inset-0 bg-blue-600/10 border-2 border-dashed border-blue-500 rounded-lg m-4 z-20 flex flex-col items-center justify-center backdrop-blur-[1px] pointer-events-none">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-blue-600 mb-2 animate-bounce"></i>
+                    <p class="text-base font-bold text-blue-900">Suelta los archivos aquí para subirlos a esta carpeta</p>
+                    <p class="text-xs text-blue-700">Se creará automáticamente la versión correspondiente</p>
+                </div>
+
+                <!-- Files Explorer Content (List or Grid) -->
+                <div id="explorer-container" class="flex-1 overflow-y-auto">
+                    <!-- Populated dynamically -->
+                    <div class="text-center py-16 text-slate-400">
+                        <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-blue-500"></i>
+                        <p class="text-sm">Cargando documentos...</p>
+                    </div>
+                </div>
+
+                <!-- Empty State Display -->
+                <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center py-16 text-slate-400">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
+                        <i class="fa-regular fa-folder-open text-2xl"></i>
+                    </div>
+                    <h4 class="text-base font-semibold text-slate-700">Esta carpeta está vacía</h4>
+                    <p class="text-xs text-slate-500 mt-1 max-w-sm text-center">Puedes arrastrar archivos directamente aquí o hacer clic en "Subir archivo nuevo".</p>
+                    <button onclick="document.getElementById('btn-main-upload').click()" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow">
+                        Subir el primer documento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status / Upload progress footer -->
+            <div id="upload-progress-bar" class="hidden bg-blue-50 border-t border-blue-100 px-4 py-2 flex items-center justify-between text-xs text-blue-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i>
+                    <span id="upload-progress-text">Subiendo archivo y calculando firma SHA-256...</span>
+                </div>
+                <span id="upload-progress-pct" class="font-bold">Procesando</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal: Login Dialog -->
+    <div id="modal-login" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-fade-in">
+            <div class="bg-slate-900 p-6 text-white text-center">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl mx-auto flex items-center justify-center text-xl shadow-lg mb-3">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-xl font-bold">Iniciar Sesión</h3>
+                <p class="text-xs text-slate-400 mt-1">Plataforma de Gestión Documental y Control de Versiones</p>
+            </div>
+            <form id="form-login" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuario</label>
+                    <input type="text" id="login-username" required placeholder="Ej: admin, carlos.editor..." 
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" 
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div id="login-error-msg" class="hidden text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200"></div>
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition text-sm">
+                    Entrar a la Plataforma
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Upload File / New Version -->
+    <div id="modal-upload" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full overflow-hidden">
+            <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-600"></i>
+                    <span id="modal-upload-title">Subir Documento</span>
+                </h3>
+                <button onclick="window.DocuApp.closeModal('modal-upload')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-upload" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Seleccionar archivo</label>
+                    <input type="file" id="upload-file-input" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-lg cursor-pointer">
+                    <p class="text-[11px] text-slate-400 mt-1">Admite cualquier formato de archivo (Word, Excel, PDF, imágenes, texto, planos, etc.) hasta 500 MB.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Carpeta de destino</label>
+                    <select id="upload-folder-select" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">(Raíz / Directorio Principal)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Comentario del cambio <span class="text-red-500">* (Obligatorio)</span>
+                    </label>
+                    <textarea id="upload-comment-input" rows="2" required placeholder="Describe brevemente qué contiene o qué cambios hiciste en esta versión..." 
+                              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoría</label>
+                        <select id="upload-category-input" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                            <option value="General">General</option>
+                            <option value="Legal">Legal y Contratos</option>
+                            <option value="Finanzas">Finanzas y Presupuesto</option>
+                            <option value="Operaciones">Operaciones y Proyectos</option>
+                            <option value="Políticas">Políticas y Procedimientos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Etiquetas (separadas por comas)</label>
+                        <input type="text" id="upload-tags-input" placeholder="ej: contrato, 2026, cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                    <button type="button" onclick="window.DocuApp.closeModal('modal-upload')" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow">Guardar y Subir Versión</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Create Folder -->
+    <div id="modal-folder" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full overflow-hidden">
+            <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-blue-600"></i>
+                    <span>Crear Nueva Carpeta</span>
+                </h3>
+                <button onclick="window.DocuApp.closeModal('modal-folder')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-create-folder" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre de la carpeta</label>
+                    <input type="text" id="new-folder-name" required placeholder="Ej: Contratos 2026" 
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ubicación</label>
+                    <select id="new-folder-parent" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="">Directorio Raíz (Sin carpeta padre)</option>
+                    </select>
+                </div>
+                <div class="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                    <button type="button" onclick="window.DocuApp.closeModal('modal-folder')" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow">Crear Carpeta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: File Details, Version Timeline & Collaboration -->
+    <div id="modal-file-detail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div id="modal-file-icon" class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-file-name" class="font-bold text-base text-white truncate max-w-md">Nombre del archivo.ext</h3>
+                        <p id="modal-file-meta" class="text-xs text-slate-400">Carpeta: General | Subido por: Carlos</p>
+                    </div>
+                </div>
+                <button onclick="window.DocuApp.closeModal('modal-file-detail')" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Modal Action Buttons Bar -->
+            <div class="bg-slate-100 border-b border-slate-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <!-- Lock / Unlock button -->
+                    <button id="btn-toggle-lock" class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">
+                        <i class="fa-solid fa-lock"></i>
+                        <span id="btn-lock-text">Bloquear para edición</span>
+                    </button>
+                    <!-- Upload new version button -->
+                    <button id="btn-modal-upload-version" class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Subir nueva versión</span>
+                    </button>
+                    <!-- Download current version -->
+                    <button id="btn-modal-download" class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-white hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Descargar vigente</span>
+                    </button>
+                    <!-- Preview -->
+                    <button id="btn-modal-preview" class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-white hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>Vista previa</span>
+                    </button>
+                    <!-- Share link -->
+                    <button id="btn-modal-share" class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-white hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Compartir enlace</span>
+                    </button>
+                </div>
+                <!-- Trash button -->
+                <button id="btn-modal-trash" class="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Mover a papelera</span>
+                </button>
+            </div>
+
+            <!-- Modal Body Tabs -->
+            <div class="flex border-b border-slate-200 bg-white px-6">
+                <button id="tab-btn-versions" onclick="window.DocuApp.switchFileTab('versions')" class="py-3 px-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
+                    <i class="fa-solid fa-timeline"></i>
+                    <span>Historial de Versiones (<span id="file-version-count">1</span>)</span>
+                </button>
+                <button id="tab-btn-comments" onclick="window.DocuApp.switchFileTab('comments')" class="py-3 px-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Comentarios y Menciones (<span id="file-comment-count">0</span>)</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50">
+                <!-- Tab 1: Version Timeline -->
+                <div id="tab-content-versions" class="space-y-4">
+                    <div id="version-timeline-container" class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-300">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Comments & Mentions -->
+                <div id="tab-content-comments" class="hidden space-y-4">
+                    <div id="comments-list-container" class="space-y-3 max-h-64 overflow-y-auto">
+                        <!-- Loaded dynamically -->
+                    </div>
+                    <form id="form-add-comment" class="mt-4 pt-4 border-t border-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Escribir un comentario o mencionar a un compañero (@usuario):</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="comment-text-input" required placeholder="Escribe tu comentario aquí (ej: @elena.revisora favor de revisar)..." 
+                                   class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold">Comentar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Version Diff (Comparison) -->
+    <div id="modal-diff" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare text-blue-400"></i>
+                    <span>Comparación de Versiones</span>
+                </h3>
+                <button onclick="window.DocuApp.closeModal('modal-diff')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 space-y-4">
+                <!-- Metadata Comparison Card -->
+                <div id="diff-metadata-container" class="grid grid-cols-2 gap-4">
+                    <!-- Populated dynamically -->
+                </div>
+                <!-- Textual Diff Viewer -->
+                <div id="diff-viewer-wrapper" class="border border-slate-200 rounded-xl overflow-hidden bg-slate-900 text-slate-100 text-xs font-mono">
+                    <div class="p-2.5 bg-slate-800 text-slate-300 font-sans font-semibold text-xs border-b border-slate-700 flex justify-between">
+                        <span>Diferencias de contenido (Diff en texto plano)</span>
+                        <span id="diff-status-label" class="text-blue-400">Analizando...</span>
+                    </div>
+                    <pre id="diff-code-view" class="p-4 overflow-x-auto max-h-80 whitespace-pre-wrap leading-relaxed"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: In-Browser Preview (PDF, Images, Text) -->
+    <div id="modal-preview" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-5xl w-full h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-3 bg-slate-900 text-white flex justify-between items-center">
+                <span id="preview-title" class="font-bold text-sm truncate max-w-xl">Vista Previa</span>
+                <div class="flex items-center gap-3">
+                    <a id="preview-download-link" href="#" class="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">Descargar</a>
+                    <button onclick="window.DocuApp.closeModal('modal-preview')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="preview-body" class="flex-1 bg-slate-100 flex items-center justify-center p-2 overflow-auto">
+                <!-- Embedded iframe for PDF or img or text -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Share Link with Expiry -->
+    <div id="modal-share" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden">
+            <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-blue-600"></i>
+                    <span>Compartir Enlace con Vencimiento</span>
+                </h3>
+                <button onclick="window.DocuApp.closeModal('modal-share')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vigencia del enlace</label>
+                    <select id="share-expiry-hours" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="24">24 Horas (1 día)</option>
+                        <option value="72" selected>72 Horas (3 días)</option>
+                        <option value="168">7 Días (1 semana)</option>
+                    </select>
+                </div>
+                <button id="btn-generate-share-link" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow">
+                    Generar Enlace Seguro
+                </button>
+                <div id="share-result-container" class="hidden space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Enlace generado:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="share-link-input" readonly class="flex-1 px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono">
+                        <button id="btn-copy-share" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs rounded-lg font-bold">Copiar</button>
+                    </div>
+                    <p id="share-expires-label" class="text-[11px] text-slate-500"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Administration Panel (Users, Audit, Backups, Permissions) -->
+    <div id="modal-admin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-5xl w-full h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-purple-400 text-lg"></i>
+                    <h3 class="font-bold text-base">Panel de Administración del Sistema</h3>
+                </div>
+                <button onclick="window.DocuApp.closeModal('modal-admin')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Admin Tabs Navigation -->
+            <div class="flex border-b border-slate-200 bg-slate-50 px-6 gap-2">
+                <button id="admin-tab-users" onclick="window.DocuApp.switchAdminTab('users')" class="py-3 px-3 text-xs font-bold border-b-2 border-purple-600 text-purple-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Usuarios y Roles</span>
+                </button>
+                <button id="admin-tab-audit" onclick="window.DocuApp.switchAdminTab('audit')" class="py-3 px-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span>Bitácora de Auditoría</span>
+                </button>
+                <button id="admin-tab-backup" onclick="window.DocuApp.switchAdminTab('backup')" class="py-3 px-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-database"></i>
+                    <span>Respaldos y Restauración</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-100">
+                <!-- Subtab: Users -->
+                <div id="admin-content-users" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-bold uppercase text-slate-600">Catálogo de Usuarios Registrados</h4>
+                        <button onclick="window.DocuApp.showNewUserForm()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow">
+                            <i class="fa-solid fa-user-plus mr-1"></i> Registrar Usuario
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left text-xs divide-y divide-slate-200">
+                            <thead class="bg-slate-50 font-semibold text-slate-600">
+                                <tr>
+                                    <th class="p-3">Usuario</th>
+                                    <th class="p-3">Nombre Completo</th>
+                                    <th class="p-3">Correo</th>
+                                    <th class="p-3">Rol Asignado</th>
+                                    <th class="p-3">Estado</th>
+                                    <th class="p-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subtab: Audit Log -->
+                <div id="admin-content-audit" class="hidden space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h4 class="text-xs font-bold uppercase text-slate-600">Bitácora Inmutable de Auditoría</h4>
+                        <div class="flex gap-2">
+                            <input type="text" id="audit-filter-input" placeholder="Filtrar por acción o usuario..." class="px-3 py-1 bg-white border border-slate-300 rounded text-xs">
+                            <button onclick="window.DocuApp.loadAuditLog()" class="px-3 py-1 bg-slate-800 text-white rounded text-xs font-medium">Buscar</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left text-xs divide-y divide-slate-200">
+                            <thead class="bg-slate-50 font-semibold text-slate-600">
+                                <tr>
+                                    <th class="p-3">Fecha y Hora</th>
+                                    <th class="p-3">Usuario</th>
+                                    <th class="p-3">Acción Realizada</th>
+                                    <th class="p-3">Objeto Afectado</th>
+                                    <th class="p-3">Detalle</th>
+                                    <th class="p-3">Dirección IP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-audit-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subtab: Backup & Restore -->
+                <div id="admin-content-backup" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                            <h5 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-download text-blue-600"></i> Generar Respaldo Manual
+                            </h5>
+                            <p class="text-xs text-slate-500">Crea una copia sincronizada de la base de datos relacional y de todos los archivos binarios almacenados.</p>
+                            <button id="btn-trigger-backup" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow">
+                                Crear Respaldo Ahora (.zip)
+                            </button>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                            <h5 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-upload text-red-600"></i> Restaurar desde Archivo de Respaldo
+                            </h5>
+                            <p class="text-xs text-slate-500">Sube un paquete de respaldo previo (.zip) para restablecer la base de datos y los archivos.</p>
+                            <input type="file" id="restore-backup-file" accept=".zip" class="block w-full text-xs text-slate-500 file:py-1 file:px-3 file:rounded file:border-0 file:bg-slate-100">
+                            <button id="btn-trigger-restore" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow">
+                                Restaurar Sistema
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                        <h5 class="text-xs font-bold uppercase text-slate-600 mb-3">Historial de Respaldos Disponibles</h5>
+                        <div id="backups-list-container" class="space-y-2 text-xs">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Element -->
+    <div id="toast" class="fixed bottom-5 right-5 max-w-sm bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-message" class="flex-1 font-medium">Operación realizada con éxito</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/explorer.js"></script>
+    <script src="/static/js/fileDetail.js"></script>
+    <script src="/static/js/versionDiff.js"></script>
+    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/preview.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

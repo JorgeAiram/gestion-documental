@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Iniciar Servidor Web Documental",
+            "type": "shell",
+            "command": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Ejecutar Suite de Pruebas",
+            "type": "shell",
+            "command": "python backend/tests/run_tests.py",
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}
