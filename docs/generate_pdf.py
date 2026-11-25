@@ -189,6 +189,7 @@ def build_pdf():
     meta_data = [
         [Paragraph("<b>Nombre del proyecto:</b>", body_style), Paragraph("DocuControl — Gestión Documental con Control de Versiones", body_style)],
         [Paragraph("<b>Tipo de solicitud:</b>", body_style), Paragraph("Desarrollo de software a la medida (Aplicación web interna)", body_style)],
+        [Paragraph("<b>Integrantes del Equipo:</b>", body_style), Paragraph("• <b>Cervantes Morán Jorge Airam</b><br/>• <b>Hernández Rosas Aranza Jaqueline</b><br/>• <b>Ricárdez Reyes Rafael</b>", body_style)],
         [Paragraph("<b>Área solicitante:</b>", body_style), Paragraph("Dirección de Operaciones con apoyo de Tecnologías de la Información", body_style)],
         [Paragraph("<b>Destinatario:</b>", body_style), Paragraph("Equipo directivo, administrativo, operativo y de desarrollo", body_style)],
         [Paragraph("<b>Usuarios finales:</b>", body_style), Paragraph("Personal corporativo (perfil técnico bajo o nulo) y administradores", body_style)],
@@ -211,6 +212,10 @@ def build_pdf():
 
     # Executive Box
     exec_summary = """
+    <b>Equipo de Desarrollo / Integrantes:</b><br/>
+    • <b>Cervantes Morán Jorge Airam</b><br/>
+    • <b>Hernández Rosas Aranza Jaqueline</b><br/>
+    • <b>Ricárdez Reyes Rafael</b><br/><br/>
     <b>Resumen del Entregable:</b> Este documento consolida la entrega final de la plataforma web de gestión documental,
     la cual reemplaza de manera definitiva la carpeta compartida en red. El sistema elimina por completo la pérdida
     accidental de información mediante bloqueo por concurrencia, garantiza la inmutabilidad de cada archivo con firmas
